@@ -1712,7 +1712,7 @@ export default function SmartQAPage() {
                 )}
               </div>
             </DialogHeader>
-            <div className="flex-1 overflow-y-auto py-4">
+            <div className="flex-1 overflow-y-auto py-4 custom-scrollbar">
               <div
                 className="prose prose-sm max-w-none text-gray-700"
                 dangerouslySetInnerHTML={{
