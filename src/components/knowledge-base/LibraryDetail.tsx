@@ -52,13 +52,14 @@ import { MoveModal } from './MoveModal';
 import { EditItemModal } from './EditItemModal';
 import { CreateByTemplateModal } from './CreateByTemplateModal';
 import { OnlineCreationModal } from './OnlineCreationModal';
+import { ParsePreviewModal } from './ParsePreviewModal';
 import { FolderOperationModal } from './FolderOperationModal';
 
 interface LibraryDetailProps {
     library: DetailedKnowledgeBase;
     allLibraries: DetailedKnowledgeBase[];
     onBack: () => void;
-    onUploadFile: () => void;
+    onUploadFile: (libraryType?: 'brand' | 'quote-equipment' | 'quote-rnd' | 'normal', onParseComplete?: (files: File[]) => void) => void;
     onUploadFolder: () => void;
     onPreviewFile: (file: any) => void;
     previewFile: any | null;
@@ -105,6 +106,10 @@ export function LibraryDetail({ library, allLibraries, onBack, onUploadFile, onU
         type: 'create' | 'rename';
         targetFile?: KBFile;
     }>({ open: false, type: 'create' });
+
+    // 解析预览相关状态
+    const [showParsePreview, setShowParsePreview] = useState(false);
+    const [uploadedFilesForParse, setUploadedFilesForParse] = useState<File[]>([]);
 
     // 本地重命名状态 (用于演示目的，覆盖原始数据)
     const [renamedItems, setRenamedItems] = useState<Record<string, string>>({});
@@ -307,6 +312,36 @@ export function LibraryDetail({ library, allLibraries, onBack, onUploadFile, onU
                 }
             }
         });
+    };
+
+    // 处理解析预览完成
+    const handleParseComplete = (files: File[]) => {
+        setUploadedFilesForParse(files);
+        setShowParsePreview(true);
+    };
+
+    // 处理解析结果确认入库
+    const handleParseConfirm = (items: any[]) => {
+        // 根据库类型更新数据
+        if (library.viewType === 'brand-card') {
+            // 更新品牌选型库数据
+            toast.success(`已成功入库 ${items.length} 个品牌产品`);
+        } else if (library.viewType === 'quote-table') {
+            // 更新产品报价库数据
+            toast.success(`已成功入库 ${items.length} 条报价数据`);
+        }
+        setShowParsePreview(false);
+        setUploadedFilesForParse([]);
+    };
+
+    // 获取当前库的类型
+    const getLibraryType = (): 'brand' | 'quote-equipment' | 'quote-rnd' | 'normal' => {
+        if (library.viewType === 'brand-card') return 'brand';
+        if (library.viewType === 'quote-table') {
+            // 这里可以根据库名称或其他标识判断是设备报价还是研发报价
+            return 'quote-equipment';
+        }
+        return 'normal';
     };
 
     // Mock Parse Status helper
@@ -781,7 +816,10 @@ export function LibraryDetail({ library, allLibraries, onBack, onUploadFile, onU
             {/* Toolbar */}
             <div className="p-4 pb-2 flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-2">
-                    <Button className="bg-blue-600 hover:bg-blue-700 text-white gap-2" onClick={onUploadFile}>
+                    <Button 
+                        className="bg-blue-600 hover:bg-blue-700 text-white gap-2" 
+                        onClick={() => onUploadFile(getLibraryType(), handleParseComplete)}
+                    >
                         <Upload className="h-4 w-4" /> 上传文件
                     </Button>
                     <Button variant="outline" className="gap-2" onClick={handleUploadFolder}>
@@ -885,6 +923,14 @@ export function LibraryDetail({ library, allLibraries, onBack, onUploadFile, onU
                 type={folderModalState.type}
                 initialName={folderModalState.targetFile?.name}
                 onConfirm={handleFolderOperationConfirm}
+            />
+
+            <ParsePreviewModal
+                open={showParsePreview}
+                onOpenChange={setShowParsePreview}
+                libraryType={getLibraryType()}
+                uploadedFiles={uploadedFilesForParse}
+                onConfirm={handleParseConfirm}
             />
         </div>
     );

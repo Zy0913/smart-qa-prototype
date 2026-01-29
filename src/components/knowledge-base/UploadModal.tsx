@@ -31,7 +31,9 @@ interface UploadModalProps {
     isAI?: boolean; // 是否是AI智能上传
     isFolder?: boolean; // 是否是上传文件夹
     targetLibraryName?: string; // 目标库名称 (如果已知)
+    libraryType?: 'brand' | 'quote-equipment' | 'quote-rnd' | 'normal'; // 库类型
     onConfirm: () => void;
+    onParseComplete?: (files: File[]) => void; // 解析完成回调
 }
 
 const TAG_TAXONOMY = {
@@ -41,7 +43,7 @@ const TAG_TAXONOMY = {
     '所属部门': ['项目办', '产品部', '研发部', '测试部', '市场部']
 };
 
-export function UploadModal({ open, onOpenChange, isAI = false, isFolder = false, targetLibraryName = '', onConfirm }: UploadModalProps) {
+export function UploadModal({ open, onOpenChange, isAI = false, isFolder = false, targetLibraryName = '', libraryType = 'normal', onConfirm, onParseComplete }: UploadModalProps) {
     const [files, setFiles] = useState<FileItem[]>([]);
     const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
     const [selectedLibrary, setSelectedLibrary] = useState<string>('kb-enterprise-3'); // 默认品牌选型库
@@ -400,11 +402,20 @@ export function UploadModal({ open, onOpenChange, isAI = false, isFolder = false
                             取消
                         </Button>
                         <Button
-                            onClick={onConfirm}
+                            onClick={() => {
+                                // 如果是特殊库（品牌/报价），触发解析预览
+                                if (libraryType !== 'normal' && onParseComplete) {
+                                    const uploadedFiles = files.map(f => f.file);
+                                    onParseComplete(uploadedFiles);
+                                    onOpenChange(false);
+                                } else {
+                                    onConfirm();
+                                }
+                            }}
                             disabled={files.length === 0 || files.some(f => f.progress < 100)}
                             className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 rounded-xl shadow-lg shadow-blue-100 disabled:opacity-50 transition-all"
                         >
-                            {isAI ? '确认归档' : '确认上传'}
+                            {libraryType !== 'normal' ? 'AI 智能解析' : (isAI ? '确认归档' : '确认上传')}
                         </Button>
                     </div>
                 </DialogFooter>

@@ -41,6 +41,8 @@ export function KnowledgeBaseView({ aiPanel }: KnowledgeBaseViewProps) {
     const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
     const [isAIUpload, setIsAIUpload] = useState(false);
     const [isFolderUpload, setIsFolderUpload] = useState(false);
+    const [uploadLibraryType, setUploadLibraryType] = useState<'brand' | 'quote-equipment' | 'quote-rnd' | 'normal'>('normal');
+    const [uploadParseCallback, setUploadParseCallback] = useState<((files: File[]) => void) | undefined>(undefined);
 
     // 模拟数据状态化，以便实时反映分享状态
     const [allLibraries, setAllLibraries] = useState<DetailedKnowledgeBase[]>(mockDetailedKnowledgeBases);
@@ -62,9 +64,11 @@ export function KnowledgeBaseView({ aiPanel }: KnowledgeBaseViewProps) {
         setShowUploadModal(true);
     };
 
-    const handeNormalUpload = () => {
+    const handeNormalUpload = (libraryType: 'brand' | 'quote-equipment' | 'quote-rnd' | 'normal' = 'normal', onParseComplete?: (files: File[]) => void) => {
         setIsAIUpload(false);
         setIsFolderUpload(false);
+        setUploadLibraryType(libraryType);
+        setUploadParseCallback(() => onParseComplete);
         setShowUploadModal(true);
     };
 
@@ -277,6 +281,8 @@ export function KnowledgeBaseView({ aiPanel }: KnowledgeBaseViewProps) {
                 onOpenChange={setShowUploadModal}
                 isAI={isAIUpload}
                 isFolder={isFolderUpload}
+                libraryType={uploadLibraryType}
+                onParseComplete={uploadParseCallback}
                 onConfirm={() => {
                     setShowUploadModal(false);
                     if (isAIUpload) {
