@@ -1,0 +1,18 @@
+{
+    "search.exclude": {
+        "**/node_modules": true,
+        "**/.next": true,
+        "**/out": true,
+        "**/*.tsbuildinfo": true
+    },
+    "files.watcherExclude": {
+        "**/node_modules/*/**": true,
+        "**/.next/*/**": true,
+        "**/out/*/**": true
+    },
+    "typescript.tsdk": "node_modules/typescript/lib",
+    "css.lint.unknownAtRules": "ignore",
+    "css.lint.vendorPrefix": "ignore",
+    "scss.lint.unknownAtRules": "ignore",
+    "less.lint.unknownAtRules": "ignore"
+}
