@@ -149,7 +149,7 @@ export function KnowledgeBaseView({ aiPanel }: KnowledgeBaseViewProps) {
                         <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden border-r border-slate-200/40">
                             <Tabs value={currentTab} onValueChange={(v: string) => setCurrentTab(v as KBTab)} className="flex-1 flex flex-col min-h-0">
                                 {/* 知识库头部 */}
-                                <div className="flex items-center gap-10 px-8 py-5 border-b border-slate-200/40 bg-white flex-shrink-0">
+                                <div className="flex items-center gap-10 px-8 py-5 border-b border-slate-200/40 bg-white shrink-0">
                                     <TabsList className="bg-slate-50 border border-slate-200/60 p-1 rounded-2xl h-[48px] shadow-inner">
                                         <TabsTrigger value="personal" className="h-full px-6 rounded-xl text-sm font-semibold transition-all data-[state=active]:bg-white data-[state=active]:text-orange-600 data-[state=active]:shadow-sm">个人库</TabsTrigger>
                                         <TabsTrigger value="department" className="h-full px-6 rounded-xl text-sm font-semibold transition-all data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm">部门库</TabsTrigger>
@@ -158,7 +158,7 @@ export function KnowledgeBaseView({ aiPanel }: KnowledgeBaseViewProps) {
                                     </TabsList>
 
                                     <div className="flex items-center gap-3 ml-auto">
-                                        <Button onClick={handleAIUpload} className="bg-gradient-to-r from-[#8b5cf6] to-[#6366f1] hover:from-[#7c3aed] hover:to-[#4f46e5] text-white shadow-lg shadow-indigo-100/50 border-0 gap-2 h-10 px-5 rounded-xl transition-all hover:scale-[1.02] active:scale-95 text-sm">
+                                        <Button onClick={handleAIUpload} className="bg-linear-to-r from-[#8b5cf6] to-[#6366f1] hover:from-[#7c3aed] hover:to-[#4f46e5] text-white shadow-lg shadow-indigo-100/50 border-0 gap-2 h-10 px-5 rounded-xl transition-all hover:scale-[1.02] active:scale-95 text-sm">
                                             <Sparkles className="h-4 w-4" />
                                             AI 智能上传
                                         </Button>
@@ -266,7 +266,7 @@ export function KnowledgeBaseView({ aiPanel }: KnowledgeBaseViewProps) {
 
                         {/* 右侧 AI 助手面板 - 提到顶层与内容区并列 */}
                         {aiPanel && (
-                            <aside className="w-[420px] flex-shrink-0 h-full bg-white shadow-[-8px_0_24px_rgba(0,0,0,0.02)] overflow-hidden z-10">
+                            <aside className="w-[420px] shrink-0 h-full bg-white shadow-[-8px_0_24px_rgba(0,0,0,0.02)] overflow-hidden z-10">
                                 {aiPanel}
                             </aside>
                         )}

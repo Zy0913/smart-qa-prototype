@@ -120,7 +120,7 @@ const HistoryList = ({
     })).filter(group => group.items.length > 0);
 
     return (
-        <div className={cn("flex flex-col h-full bg-white flex-shrink-0", className)}>
+        <div className={cn("flex flex-col h-full bg-white shrink-0", className)}>
             {showHeader && (
                 <div className="h-14 border-b border-slate-100 px-4 flex items-center justify-between shrink-0">
                     <div className="flex items-center gap-2">
@@ -187,7 +187,7 @@ const HistoryList = ({
                                             onSelect?.();
                                         }}
                                     >
-                                        <MessageSquare className={cn("h-4 w-4 flex-shrink-0 opacity-70", selectedHistory === item.id ? "text-blue-500" : "text-slate-400")} />
+                                        <MessageSquare className={cn("h-4 w-4 shrink-0 opacity-70", selectedHistory === item.id ? "text-blue-500" : "text-slate-400")} />
                                         <span className="truncate flex-1">{item.title}</span>
                                         <button
                                             onClick={(e) => {
@@ -257,7 +257,7 @@ const MessageContent = ({ content, citations, onPreviewCitation }: { content: st
                                                     <span>{index}</span>
                                                 </sup>
                                             </TooltipTrigger>
-                                            <TooltipContent className="p-3 border border-slate-200 shadow-xl bg-white/95 backdrop-blur-sm z-[100] max-w-[280px]">
+                                            <TooltipContent className="p-3 border border-slate-200 shadow-xl bg-white/95 backdrop-blur-sm z-100 max-w-[280px]">
                                                 <div className="flex flex-col gap-1">
                                                     <span className="text-[12px] font-bold text-slate-800 line-clamp-2">{citation?.title || '未知文件'}</span>
                                                     <div className="flex items-center gap-2 mt-1">
@@ -479,7 +479,7 @@ const ChatContent = ({
                                     message.role === 'user' ? "flex-row-reverse" : "flex-row"
                                 )}>
                                     <Avatar className={cn(
-                                        "h-10 w-10 border-2 flex-shrink-0 shadow-sm",
+                                        "h-10 w-10 border-2 shrink-0 shadow-sm",
                                         message.role === 'user' ? "border-indigo-100 bg-indigo-50" : "border-white bg-blue-50"
                                     )}>
                                         <AvatarImage src="" />
@@ -539,7 +539,7 @@ const ChatContent = ({
                                                                                 {citation.excerpt || '本项目采用公开招标方式，投标人须满足相关法规规定，具备独立法人资格。系统需支持多场景应用，日均处理量预计较大，需确保系统稳定运行...'}
                                                                             </div>
                                                                         </div>
-                                                                        <div className="flex-shrink-0 mt-1">
+                                                                        <div className="shrink-0 mt-1">
                                                                             <Eye className="h-4 w-4 text-slate-300 group-hover:text-blue-500 transition-colors" />
                                                                         </div>
                                                                     </div>
@@ -580,7 +580,7 @@ const ChatContent = ({
                     {isLoading && searchStatus?.isSearching && (
                         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 pl-14">
                             <div className="max-w-2xl bg-white border border-blue-100 rounded-2xl shadow-lg shadow-blue-100/20 overflow-hidden">
-                                <div className="p-4 bg-gradient-to-r from-blue-50/50 to-white border-b border-blue-50">
+                                <div className="p-4 bg-linear-to-r from-blue-50/50 to-white border-b border-blue-50">
                                     <div className="flex items-center justify-between mb-3">
                                         <div className="flex items-center gap-3">
                                             <div className="h-8 w-8 rounded-lg bg-blue-100 flex items-center justify-center animate-pulse text-blue-600">
@@ -741,7 +741,7 @@ export function AIChatPanel(props: AIChatPanelProps) {
             {props.isSidebar ? (
                 <div className="flex flex-col h-full bg-white relative overflow-hidden">
                     {/* Sidebar Header */}
-                    <div className="flex items-center justify-between px-4 h-14 border-b border-slate-100 flex-shrink-0 bg-white shadow-sm z-10 transition-all">
+                    <div className="flex items-center justify-between px-4 h-14 border-b border-slate-100 shrink-0 bg-white shadow-sm z-10 transition-all">
                         <div className="flex items-center gap-2">
                             <Button variant="ghost" size="sm" className="gap-2 text-blue-600 hover:bg-blue-50 font-bold px-3 transition-all active:scale-95" onClick={props.onNewChat}>
                                 <Plus className="h-4 w-4" />
@@ -801,7 +801,7 @@ export function AIChatPanel(props: AIChatPanelProps) {
                     {/* 1. Left Sidebar */}
                     <HistoryList
                         {...props}
-                        className="w-[280px] border-r border-slate-100 flex-shrink-0 bg-slate-50/50"
+                        className="w-[280px] border-r border-slate-100 shrink-0 bg-slate-50/50"
                         showHeader={true}
                     />
 

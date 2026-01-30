@@ -54,7 +54,7 @@ export function CreateByTemplateModal({ open, onOpenChange, onConfirm }: CreateB
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[600px] rounded-2xl border-none shadow-2xl p-0 overflow-hidden">
-                <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-6 text-white text-center sm:text-left">
+                <div className="bg-linear-to-br from-blue-600 to-indigo-700 p-6 text-white text-center sm:text-left">
                     <DialogHeader>
                         <DialogTitle className="text-2xl font-bold flex items-center justify-center sm:justify-start gap-2">
                             <LayoutTemplate className="h-6 w-6" /> 选择模板创建项目

@@ -150,7 +150,7 @@ const TreeItem = ({
                         )}
                     </div>
 
-                    <div className="flex items-center gap-8 flex-shrink-0">
+                    <div className="flex items-center gap-8 shrink-0">
                         {!isFolder && !compact && (
                             <span className="text-xs text-slate-400 w-32 text-right">
                                 {item.updatedAt}
@@ -263,7 +263,7 @@ export function KBTreeList({ libraries, onEnterLibrary, compact = false, onSelec
                 {!compact && (
                     <div className="flex items-center py-3 px-4 bg-slate-50/50 border-b border-slate-100 text-xs font-bold text-slate-400 uppercase tracking-wider">
                         <div className="flex-1 pl-8">名称</div>
-                        <div className="flex items-center gap-8 flex-shrink-0">
+                        <div className="flex items-center gap-8 shrink-0">
                             <div className="text-right pr-6 whitespace-nowrap">更新时间 / 操作</div>
                         </div>
                     </div>
