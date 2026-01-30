@@ -164,7 +164,7 @@ const CitationTag = ({
             {citationIndex}
           </sup>
         </TooltipTrigger>
-        <TooltipContent className="max-w-[200px] break-words">
+        <TooltipContent className="max-w-[200px] wrap-break-word">
           <div className="font-medium text-[11px] mb-0.5">{citation.title}</div>
           <div className="text-[10px] text-slate-400">{citation.source}</div>
         </TooltipContent>
@@ -604,7 +604,7 @@ export default function SmartQAPage() {
         <Toaster position="top-center" richColors />
 
         {/* 顶部导航栏 - 全宽布局 */}
-        <header className="h-14 border-b border-slate-200 bg-white flex items-center justify-between px-6 flex-shrink-0 z-40 shadow-sm relative">
+        <header className="h-14 border-b border-slate-200 bg-white flex items-center justify-between px-6 shrink-0 z-40 shadow-sm relative">
           <div className="flex items-center gap-12">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-100">
@@ -764,7 +764,7 @@ export default function SmartQAPage() {
           {/* 引用预览 Dialog */}
           <Dialog open={!!previewCitation} onOpenChange={() => setPreviewCitation(null)}>
             <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col p-0 gap-0 border-none shadow-2xl rounded-3xl">
-              <DialogHeader className="p-6 border-b border-slate-100 flex-shrink-0 bg-white">
+              <DialogHeader className="p-6 border-b border-slate-100 shrink-0 bg-white">
                 <DialogTitle className="flex items-center gap-3 text-xl text-slate-800 font-bold tracking-tight">
                   <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
                     <FileText className="h-5 w-5 text-blue-600" />

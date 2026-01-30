@@ -172,7 +172,7 @@ export function ParsePreviewModal({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="!max-w-none w-[90vw] h-[85vh] p-0 overflow-hidden flex flex-col border-none shadow-2xl rounded-2xl">
+            <DialogContent className="max-w-none! w-[90vw] h-[85vh] p-0 overflow-hidden flex flex-col border-none shadow-2xl rounded-2xl">
                 <DialogHeader className="px-6 py-4 border-b border-slate-200 shrink-0">
                     <DialogTitle className="flex items-center gap-3 text-lg font-bold text-slate-800">
                         <div className="w-9 h-9 rounded-xl bg-purple-100 flex items-center justify-center">
