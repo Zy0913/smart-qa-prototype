@@ -55,13 +55,12 @@ import { CreateByTemplateModal } from './CreateByTemplateModal';
 import { OnlineCreationModal } from './OnlineCreationModal';
 import { ParsePreviewModal } from './ParsePreviewModal';
 import { FolderOperationModal } from './FolderOperationModal';
+import { UploadModal, UploadedFileInfo } from './UploadModal';
 
 interface LibraryDetailProps {
     library: DetailedKnowledgeBase;
     allLibraries: DetailedKnowledgeBase[];
     onBack: () => void;
-    onUploadFile: (libraryType?: 'brand' | 'quote-equipment' | 'quote-rnd' | 'normal', onParseComplete?: (files: File[]) => void) => void;
-    onUploadFolder: () => void;
     onPreviewFile: (file: any) => void;
     previewFile: any | null;
 }
@@ -80,10 +79,14 @@ const getFileIcon = (type: string) => {
     }
 };
 
-export function LibraryDetail({ library, allLibraries, onBack, onUploadFile, onUploadFolder, onPreviewFile, previewFile }: LibraryDetailProps) {
+export function LibraryDetail({ library, allLibraries, onBack, onPreviewFile, previewFile }: LibraryDetailProps) {
     const [searchTerm, setSearchTerm] = useState('');
     // 模拟新建文件夹的临时状态
     const [tempFolders, setTempFolders] = useState<KBFile[]>([]);
+
+    // 上传模态框状态
+    const [showUploadModal, setShowUploadModal] = useState(false);
+    const [isFolderUpload, setIsFolderUpload] = useState(false);
 
     // 移动文件相关状态
     const [movingFile, setMovingFile] = useState<KBFile | null>(null);
@@ -219,8 +222,139 @@ export function LibraryDetail({ library, allLibraries, onBack, onUploadFile, onU
         }
     };
 
+    const handleUploadFile = () => {
+        setIsFolderUpload(false);
+        setShowUploadModal(true);
+    };
+
     const handleUploadFolder = () => {
-        onUploadFolder();
+        setIsFolderUpload(true);
+        setShowUploadModal(true);
+    };
+
+    // 根据文件扩展名获取类型
+    const getFileTypeFromName = (fileName: string): KBFile['type'] => {
+        const ext = fileName.split('.').pop()?.toLowerCase() || '';
+        if (['doc', 'docx'].includes(ext)) return 'word';
+        if (['xls', 'xlsx'].includes(ext)) return 'excel';
+        if (['ppt', 'pptx'].includes(ext)) return 'ppt';
+        if (ext === 'pdf') return 'pdf';
+        if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(ext)) return 'image';
+        if (['dwg', 'dxf'].includes(ext)) return 'cad';
+        return 'other';
+    };
+
+    // 处理上传确认
+    const handleUploadConfirm = (uploadedFiles: UploadedFileInfo[], isFolder: boolean) => {
+        const currentParentId = folderStack.length > 0 ? folderStack[folderStack.length - 1].id : undefined;
+
+        if (isFolder && uploadedFiles.length > 0) {
+            // 文件夹上传：保留目录结构
+            const folderMap = new Map<string, KBFile>();
+
+            uploadedFiles.forEach(fileInfo => {
+                const relativePath = fileInfo.relativePath || fileInfo.file.name;
+                const pathParts = relativePath.split('/');
+
+                // 如果只有一级，直接作为文件添加
+                if (pathParts.length === 1) {
+                    const newFile: KBFile = {
+                        id: `uploaded-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                        name: fileInfo.file.name,
+                        type: getFileTypeFromName(fileInfo.file.name),
+                        size: `${(fileInfo.file.size / 1024 / 1024).toFixed(2)} MB`,
+                        updatedAt: new Date().toISOString().split('T')[0],
+                        views: 0,
+                        downloads: 0,
+                        tags: fileInfo.tags,
+                        description: fileInfo.notes,
+                        parentId: currentParentId,
+                    };
+                    setTempFolders(prev => [newFile, ...prev]);
+                } else {
+                    // 有多级目录结构
+                    const rootFolderName = pathParts[0];
+
+                    // 创建或获取根文件夹
+                    if (!folderMap.has(rootFolderName)) {
+                        const rootFolder: KBFile = {
+                            id: `folder-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                            name: rootFolderName,
+                            type: 'folder',
+                            updatedAt: new Date().toISOString().split('T')[0],
+                            views: 0,
+                            downloads: 0,
+                            children: [],
+                            parentId: currentParentId,
+                        };
+                        folderMap.set(rootFolderName, rootFolder);
+                    }
+
+                    // 递归创建子目录结构
+                    let currentFolder = folderMap.get(rootFolderName)!;
+                    for (let i = 1; i < pathParts.length - 1; i++) {
+                        const subFolderName = pathParts[i];
+                        let subFolder = currentFolder.children?.find(c => c.name === subFolderName && c.type === 'folder');
+                        if (!subFolder) {
+                            subFolder = {
+                                id: `folder-${Date.now()}-${Math.random().toString(36).substr(2, 9)}-${i}`,
+                                name: subFolderName,
+                                type: 'folder',
+                                updatedAt: new Date().toISOString().split('T')[0],
+                                views: 0,
+                                downloads: 0,
+                                children: [],
+                                parentId: currentFolder.id,
+                            };
+                            currentFolder.children = [...(currentFolder.children || []), subFolder];
+                        }
+                        currentFolder = subFolder;
+                    }
+
+                    // 添加文件到最深的文件夹
+                    const fileName = pathParts[pathParts.length - 1];
+                    const newFile: KBFile = {
+                        id: `uploaded-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                        name: fileName,
+                        type: getFileTypeFromName(fileName),
+                        size: `${(fileInfo.file.size / 1024 / 1024).toFixed(2)} MB`,
+                        updatedAt: new Date().toISOString().split('T')[0],
+                        views: 0,
+                        downloads: 0,
+                        tags: fileInfo.tags,
+                        description: fileInfo.notes,
+                        parentId: currentFolder.id,
+                    };
+                    currentFolder.children = [...(currentFolder.children || []), newFile];
+                }
+            });
+
+            // 将所有根文件夹添加到 tempFolders
+            const rootFolders = Array.from(folderMap.values());
+            if (rootFolders.length > 0) {
+                setTempFolders(prev => [...rootFolders, ...prev]);
+                toast.success(`已上传文件夹 "${rootFolders[0].name}"，包含 ${uploadedFiles.length} 个文件`);
+            }
+        } else {
+            // 普通文件上传：直接添加到当前目录
+            const newFiles: KBFile[] = uploadedFiles.map(fileInfo => ({
+                id: `uploaded-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                name: fileInfo.file.name,
+                type: getFileTypeFromName(fileInfo.file.name),
+                size: `${(fileInfo.file.size / 1024 / 1024).toFixed(2)} MB`,
+                updatedAt: new Date().toISOString().split('T')[0],
+                views: 0,
+                downloads: 0,
+                tags: fileInfo.tags,
+                description: fileInfo.notes,
+                parentId: currentParentId,
+            }));
+
+            setTempFolders(prev => [...newFiles, ...prev]);
+            toast.success(`已上传 ${newFiles.length} 个文件到当前目录`);
+        }
+
+        setShowUploadModal(false);
     };
 
     const handleMoveClick = (file: KBFile) => {
@@ -817,9 +951,9 @@ export function LibraryDetail({ library, allLibraries, onBack, onUploadFile, onU
             {/* Toolbar */}
             <div className="p-4 pb-2 flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-2">
-                    <Button 
-                        className="bg-blue-600 hover:bg-blue-700 text-white gap-2" 
-                        onClick={() => onUploadFile(getLibraryType(), handleParseComplete)}
+                    <Button
+                        className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
+                        onClick={handleUploadFile}
                     >
                         <Upload className="h-4 w-4" /> 上传文件
                     </Button>
@@ -940,6 +1074,15 @@ export function LibraryDetail({ library, allLibraries, onBack, onUploadFile, onU
                 libraryType={getLibraryType()}
                 uploadedFiles={uploadedFilesForParse}
                 onConfirm={handleParseConfirm}
+            />
+
+            <UploadModal
+                open={showUploadModal}
+                onOpenChange={setShowUploadModal}
+                isFolder={isFolderUpload}
+                libraryType={getLibraryType()}
+                onParseComplete={handleParseComplete}
+                onConfirm={handleUploadConfirm}
             />
         </div>
     );

@@ -25,6 +25,13 @@ interface FileItem {
     status: 'uploading' | 'completed';
 }
 
+export interface UploadedFileInfo {
+    file: File;
+    tags: string[];
+    notes: string;
+    relativePath?: string; // 用于文件夹上传时保留路径
+}
+
 interface UploadModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
@@ -32,7 +39,7 @@ interface UploadModalProps {
     isFolder?: boolean; // 是否是上传文件夹
     targetLibraryName?: string; // 目标库名称 (如果已知)
     libraryType?: 'brand' | 'quote-equipment' | 'quote-rnd' | 'normal'; // 库类型
-    onConfirm: () => void;
+    onConfirm: (uploadedFiles: UploadedFileInfo[], isFolder: boolean) => void;
     onParseComplete?: (files: File[]) => void; // 解析完成回调
 }
 
@@ -409,7 +416,14 @@ export function UploadModal({ open, onOpenChange, isAI = false, isFolder = false
                                     onParseComplete(uploadedFiles);
                                     onOpenChange(false);
                                 } else {
-                                    onConfirm();
+                                    // 构建上传文件信息
+                                    const uploadedFiles: UploadedFileInfo[] = files.map(f => ({
+                                        file: f.file,
+                                        tags: f.tags,
+                                        notes: f.notes,
+                                        relativePath: (f.file as any).webkitRelativePath || undefined,
+                                    }));
+                                    onConfirm(uploadedFiles, isFolder);
                                 }
                             }}
                             disabled={files.length === 0 || files.some(f => f.progress < 100)}

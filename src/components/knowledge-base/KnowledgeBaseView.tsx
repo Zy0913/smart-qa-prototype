@@ -138,8 +138,6 @@ export function KnowledgeBaseView({ aiPanel }: KnowledgeBaseViewProps) {
                         library={selectedLibrary}
                         allLibraries={allLibraries}
                         onBack={() => setSelectedLibraryId(null)}
-                        onUploadFile={handeNormalUpload}
-                        onUploadFolder={handleFolderUpload}
                         onPreviewFile={handlePreviewFile}
                         previewFile={previewFile}
                     />
@@ -283,7 +281,7 @@ export function KnowledgeBaseView({ aiPanel }: KnowledgeBaseViewProps) {
                 isFolder={isFolderUpload}
                 libraryType={uploadLibraryType}
                 onParseComplete={uploadParseCallback}
-                onConfirm={() => {
+                onConfirm={(_uploadedFiles, _isFolder) => {
                     setShowUploadModal(false);
                     if (isAIUpload) {
                         toast('AI分析完成，建议上传至 "品牌选型库"', {
