@@ -44,6 +44,7 @@ import {
     Move,
     LayoutTemplate,
     PenTool,
+    X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -863,7 +864,15 @@ export function LibraryDetail({ library, allLibraries, onBack, onUploadFile, onU
 
                     <div className="relative w-64">
                         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                        <Input placeholder="搜索库内文件..." className="pl-9 h-9 bg-white" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                        <Input placeholder="搜索库内文件..." className="pl-9 pr-8 h-9 bg-white" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                        {searchTerm && (
+                            <button
+                                onClick={() => setSearchTerm('')}
+                                className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 hover:text-slate-600 transition-colors"
+                            >
+                                <X className="h-4 w-4" />
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>
