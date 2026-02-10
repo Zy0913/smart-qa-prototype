@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
 
 interface OnlineCreationModalProps {
     open: boolean;
@@ -49,6 +50,8 @@ const TEMPLATES = [
     { id: 't5', name: '项目例会', category: '会议', icon: FileText, users: '4万', image: 'bg-gradient-to-br from-pink-50 to-rose-50' },
     { id: 't6', name: '周报汇报', category: '办公', icon: FileText, users: '25万', image: 'bg-gradient-to-br from-purple-50 to-violet-50' },
 ];
+const MAX_TAG_COUNT = 5;
+const MAX_TAG_LENGTH = 10;
 
 export function OnlineCreationModal({ open, onOpenChange, onConfirm }: OnlineCreationModalProps) {
     const [name, setName] = useState('');
@@ -58,13 +61,31 @@ export function OnlineCreationModal({ open, onOpenChange, onConfirm }: OnlineCre
     const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState('blank');
 
+    const normalizeTags = (rawTags: string) => {
+        return rawTags
+            .split(/[,，\s]+/)
+            .map(tag => tag.trim())
+            .filter(Boolean);
+    };
+
     const handleConfirm = () => {
         if (!name.trim()) return;
+        const parsedTags = normalizeTags(tags);
+
+        if (parsedTags.length > MAX_TAG_COUNT) {
+            toast.error(`每个文件最多 ${MAX_TAG_COUNT} 个标签`);
+            return;
+        }
+
+        if (parsedTags.some(tag => tag.length > MAX_TAG_LENGTH)) {
+            toast.error(`单个标签最多 ${MAX_TAG_LENGTH} 个字符`);
+            return;
+        }
 
         onConfirm({
             name: name + (activeTab === 'blank' ? getExtension(selectedType) : ''), // Simple extension logic
             type: activeTab === 'blank' ? selectedType : 'template_doc',
-            tags: tags.split(/[,，\s]+/).filter(Boolean),
+            tags: parsedTags,
             description,
             template: activeTab === 'template' ? selectedTemplate! : undefined
         });
@@ -227,11 +248,12 @@ export function OnlineCreationModal({ open, onOpenChange, onConfirm }: OnlineCre
                         <div className="space-y-1.5">
                             <Label className="text-xs font-medium text-slate-500">文件标签</Label>
                             <Input
-                                placeholder="输入标签，用逗号分隔"
+                                placeholder={`输入标签（逗号分隔，最多${MAX_TAG_COUNT}个）`}
                                 value={tags}
                                 onChange={(e) => setTags(e.target.value)}
                                 className="bg-white h-9"
                             />
+                            <p className="text-[10px] text-slate-400">单个标签最多 {MAX_TAG_LENGTH} 字符</p>
                         </div>
                     </div>
                     <div className="space-y-1.5">

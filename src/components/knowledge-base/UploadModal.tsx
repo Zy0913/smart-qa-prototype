@@ -15,6 +15,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
+import { defaultSystemTagTaxonomy, SystemTagTaxonomy } from '@/data/system-tags';
 
 interface FileItem {
     id: string;
@@ -39,24 +40,24 @@ interface UploadModalProps {
     isFolder?: boolean; // 是否是上传文件夹
     targetLibraryName?: string; // 目标库名称 (如果已知)
     libraryType?: 'brand' | 'quote-equipment' | 'quote-rnd' | 'normal'; // 库类型
+    tagTaxonomy?: SystemTagTaxonomy;
     onConfirm: (uploadedFiles: UploadedFileInfo[], isFolder: boolean) => void;
     onParseComplete?: (files: File[]) => void; // 解析完成回调
 }
 
-const TAG_TAXONOMY = {
-    '生命周期': ['项目启动', '项目规划', '项目执行', '监控与控制', '项目收尾'],
-    '文档类型': ['需求文档', '设计文档', '计划书', '汇报材料', '会议纪要', '合同协议'],
-    '优先级': ['P0-紧急', 'P1-高优', 'P2-普通'],
-    '所属部门': ['项目办', '产品部', '研发部', '测试部', '市场部']
-};
+const MAX_TAG_COUNT = 5;
+const MAX_TAG_LENGTH = 10;
 
-export function UploadModal({ open, onOpenChange, isAI = false, isFolder = false, targetLibraryName = '', libraryType = 'normal', onConfirm, onParseComplete }: UploadModalProps) {
+export function UploadModal({ open, onOpenChange, isAI = false, isFolder = false, targetLibraryName = '', libraryType = 'normal', tagTaxonomy, onConfirm, onParseComplete }: UploadModalProps) {
     const [files, setFiles] = useState<FileItem[]>([]);
     const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
     const [selectedLibrary, setSelectedLibrary] = useState<string>('kb-enterprise-3'); // 默认品牌选型库
     const [selectedFolder, setSelectedFolder] = useState<string>('root');
-    const [selectedCategory, setSelectedCategory] = useState<string>('生命周期');
+    const [selectedCategory, setSelectedCategory] = useState<string>(Object.keys(defaultSystemTagTaxonomy)[0] || '');
     const [tagPopoverOpen, setTagPopoverOpen] = useState<string | null>(null); // Store fileId needing tag selection
+    const activeTagTaxonomy = Object.keys(tagTaxonomy || {}).length > 0 ? (tagTaxonomy as SystemTagTaxonomy) : defaultSystemTagTaxonomy;
+    const categoryKeys = Object.keys(activeTagTaxonomy);
+    const activeCategory = categoryKeys.includes(selectedCategory) ? selectedCategory : (categoryKeys[0] || '');
 
     // Reset state when opening
     useEffect(() => {
@@ -132,12 +133,25 @@ export function UploadModal({ open, onOpenChange, isAI = false, isFolder = false
         setFiles(prev => prev.map(f => f.id === id ? { ...f, ...updates } : f));
     };
 
+    const normalizeTags = (tags: string[]) =>
+        Array.from(new Set(tags.map(tag => tag.trim()).filter(Boolean))).slice(0, MAX_TAG_COUNT);
+
     const handleAddTag = (fileId: string, tag: string) => {
-        if (!tag.trim()) return;
-        const file = files.find(f => f.id === fileId);
-        if (file && !file.tags.includes(tag)) {
-            handleUpdateFile(fileId, { tags: [...file.tags, tag.trim()] });
+        const normalizedTag = tag.trim();
+        if (!normalizedTag) return false;
+        if (normalizedTag.length > MAX_TAG_LENGTH) {
+            toast.error(`单个标签最多 ${MAX_TAG_LENGTH} 个字符`);
+            return false;
         }
+        const file = files.find(f => f.id === fileId);
+        if (!file) return false;
+        if (file.tags.includes(normalizedTag)) return false;
+        if (file.tags.length >= MAX_TAG_COUNT) {
+            toast.error(`每个文件最多 ${MAX_TAG_COUNT} 个标签`);
+            return false;
+        }
+        handleUpdateFile(fileId, { tags: [...file.tags, normalizedTag] });
+        return true;
     };
 
     const handleRemoveTag = (e: React.MouseEvent, fileId: string, tagToRemove: string) => {
@@ -241,6 +255,7 @@ export function UploadModal({ open, onOpenChange, isAI = false, isFolder = false
                                     <div className="space-y-2">
                                         <div className="flex items-center justify-between">
                                             <Label className="text-xs font-bold text-gray-500 uppercase tracking-wider">文件标签</Label>
+                                            <span className="text-[10px] text-gray-400">最多 {MAX_TAG_COUNT} 个，每个 ≤ {MAX_TAG_LENGTH} 字符</span>
                                         </div>
                                         <div className="flex flex-wrap gap-1.5 p-2 rounded-xl border border-gray-100 bg-white shadow-inner-sm">
                                             {fileItem.tags.map(tag => (
@@ -264,8 +279,10 @@ export function UploadModal({ open, onOpenChange, isAI = false, isFolder = false
                                                             placeholder={fileItem.tags.length === 0 ? "选择或输入标签..." : "输入..."}
                                                             onKeyDown={(e) => {
                                                                 if (e.key === 'Enter') {
-                                                                    handleAddTag(fileItem.id, (e.target as HTMLInputElement).value);
-                                                                    (e.target as HTMLInputElement).value = '';
+                                                                    const added = handleAddTag(fileItem.id, (e.target as HTMLInputElement).value);
+                                                                    if (added) {
+                                                                        (e.target as HTMLInputElement).value = '';
+                                                                    }
                                                                 }
                                                             }}
                                                             // Prevent popover from opening when just typing (optional, but good UX to allow clicking to open)
@@ -277,7 +294,7 @@ export function UploadModal({ open, onOpenChange, isAI = false, isFolder = false
                                                     <div className="flex h-[240px]">
                                                         {/* Left: Categories */}
                                                         <div className="w-[100px] bg-slate-50 border-r border-gray-100 flex flex-col">
-                                                            {Object.keys(TAG_TAXONOMY).map(category => (
+                                                            {categoryKeys.map(category => (
                                                                 <button
                                                                     key={category}
                                                                     onClick={() => setSelectedCategory(category)}
@@ -294,7 +311,7 @@ export function UploadModal({ open, onOpenChange, isAI = false, isFolder = false
                                                         {/* Right: Tags */}
                                                         <ScrollArea className="flex-1 p-3">
                                                             <div className="grid grid-cols-2 gap-2">
-                                                                {TAG_TAXONOMY[selectedCategory as keyof typeof TAG_TAXONOMY].map(tag => {
+                                                                {(activeTagTaxonomy[activeCategory] || []).map(tag => {
                                                                     const isSelected = fileItem.tags.includes(tag);
                                                                     return (
                                                                         <button
@@ -419,7 +436,7 @@ export function UploadModal({ open, onOpenChange, isAI = false, isFolder = false
                                     // 构建上传文件信息
                                     const uploadedFiles: UploadedFileInfo[] = files.map(f => ({
                                         file: f.file,
-                                        tags: f.tags,
+                                        tags: normalizeTags(f.tags),
                                         notes: f.notes,
                                         relativePath: (f.file as any).webkitRelativePath || undefined,
                                     }));

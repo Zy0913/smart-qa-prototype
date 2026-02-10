@@ -44,6 +44,7 @@ import {
     Move,
     LayoutTemplate,
     PenTool,
+    Tag,
     X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -56,6 +57,8 @@ import { OnlineCreationModal } from './OnlineCreationModal';
 import { ParsePreviewModal } from './ParsePreviewModal';
 import { FolderOperationModal } from './FolderOperationModal';
 import { UploadModal, UploadedFileInfo } from './UploadModal';
+import { FileMetadataModal } from './FileMetadataModal';
+import { SystemTagTaxonomy, flattenSystemTags } from '@/data/system-tags';
 
 interface LibraryDetailProps {
     library: DetailedKnowledgeBase;
@@ -63,6 +66,7 @@ interface LibraryDetailProps {
     onBack: () => void;
     onPreviewFile: (file: any) => void;
     previewFile: any | null;
+    tagTaxonomy?: SystemTagTaxonomy;
 }
 
 // Helper for file icons
@@ -79,7 +83,7 @@ const getFileIcon = (type: string) => {
     }
 };
 
-export function LibraryDetail({ library, allLibraries, onBack, onPreviewFile, previewFile }: LibraryDetailProps) {
+export function LibraryDetail({ library, allLibraries, onBack, onPreviewFile, previewFile, tagTaxonomy }: LibraryDetailProps) {
     const [searchTerm, setSearchTerm] = useState('');
     // 模拟新建文件夹的临时状态
     const [tempFolders, setTempFolders] = useState<KBFile[]>([]);
@@ -124,6 +128,70 @@ export function LibraryDetail({ library, allLibraries, onBack, onPreviewFile, pr
     // 视图模式与标签过滤
     const [viewMode, setViewMode] = useState<'folder' | 'tag'>('folder');
     const [selectedTag, setSelectedTag] = useState<string>('全部');
+    const [showFileMetadataModal, setShowFileMetadataModal] = useState(false);
+    const [editingFileMeta, setEditingFileMeta] = useState<KBFile | null>(null);
+    const [fileMetaOverrides, setFileMetaOverrides] = useState<Record<string, { tags: string[]; description: string }>>({});
+    const systemSuggestedTags = tagTaxonomy ? flattenSystemTags(tagTaxonomy).slice(0, 30) : undefined;
+
+    const normalizeMetadataTags = (tags: string[] = []) => {
+        return Array.from(
+            new Set(
+                tags
+                    .map(tag => tag.trim())
+                    .filter(Boolean)
+                    .map(tag => tag.slice(0, 10))
+            )
+        ).slice(0, 5);
+    };
+
+    const applyMetadataToTree = (
+        files: KBFile[],
+        fileId: string,
+        payload: { tags: string[]; description: string }
+    ): KBFile[] => {
+        return files.map(file => {
+            if (file.id === fileId) {
+                return {
+                    ...file,
+                    tags: payload.tags,
+                    description: payload.description,
+                };
+            }
+
+            if (file.children && file.children.length > 0) {
+                return {
+                    ...file,
+                    children: applyMetadataToTree(file.children, fileId, payload),
+                };
+            }
+
+            return file;
+        });
+    };
+
+    const isFileInTree = (files: KBFile[], fileId: string): boolean => {
+        return files.some(file => file.id === fileId || (file.children ? isFileInTree(file.children, fileId) : false));
+    };
+
+    const applyMetadataOverridesToPersistentFiles = (files: KBFile[]): KBFile[] => {
+        return files.map(file => {
+            const override = fileMetaOverrides[file.id];
+            return {
+                ...file,
+                tags: override ? override.tags : file.tags,
+                description: override ? override.description : file.description,
+                children: file.children ? applyMetadataOverridesToPersistentFiles(file.children) : undefined,
+            };
+        });
+    };
+
+    const getEffectiveFileMeta = (file: KBFile) => {
+        const override = fileMetaOverrides[file.id];
+        return {
+            tags: override ? override.tags : (file.tags || []),
+            description: override ? override.description : (file.description || ''),
+        };
+    };
 
     // 递归获取所有非文件夹文件
     const getAllFiles = (files: KBFile[]): KBFile[] => {
@@ -139,7 +207,8 @@ export function LibraryDetail({ library, allLibraries, onBack, onPreviewFile, pr
         return result;
     };
 
-    const allFilesFlattened = getAllFiles(library.files || []);
+    const persistentFiles = applyMetadataOverridesToPersistentFiles(library.files || []);
+    const allFilesFlattened = getAllFiles([...tempFolders, ...persistentFiles]);
     const uniqueTags = Array.from(new Set(allFilesFlattened.flatMap(f => f.tags || [])));
 
     // 标签颜色生成器
@@ -169,7 +238,7 @@ export function LibraryDetail({ library, allLibraries, onBack, onPreviewFile, pr
 
     const currentFiles = folderStack.length > 0
         ? (folderStack[folderStack.length - 1].children || [])
-        : (library.files || []);
+        : persistentFiles;
 
     const handleFolderClick = (file: KBFile) => {
         if (file.type === 'folder') {
@@ -266,7 +335,7 @@ export function LibraryDetail({ library, allLibraries, onBack, onPreviewFile, pr
                         updatedAt: new Date().toISOString().split('T')[0],
                         views: 0,
                         downloads: 0,
-                        tags: fileInfo.tags,
+                        tags: normalizeMetadataTags(fileInfo.tags),
                         description: fileInfo.notes,
                         parentId: currentParentId,
                     };
@@ -321,7 +390,7 @@ export function LibraryDetail({ library, allLibraries, onBack, onPreviewFile, pr
                         updatedAt: new Date().toISOString().split('T')[0],
                         views: 0,
                         downloads: 0,
-                        tags: fileInfo.tags,
+                        tags: normalizeMetadataTags(fileInfo.tags),
                         description: fileInfo.notes,
                         parentId: currentFolder.id,
                     };
@@ -345,7 +414,7 @@ export function LibraryDetail({ library, allLibraries, onBack, onPreviewFile, pr
                 updatedAt: new Date().toISOString().split('T')[0],
                 views: 0,
                 downloads: 0,
-                tags: fileInfo.tags,
+                tags: normalizeMetadataTags(fileInfo.tags),
                 description: fileInfo.notes,
                 parentId: currentParentId,
             }));
@@ -407,7 +476,7 @@ export function LibraryDetail({ library, allLibraries, onBack, onPreviewFile, pr
             updatedAt: new Date().toISOString().split('T')[0],
             views: 0,
             downloads: 0,
-            tags: fileData.tags,
+            tags: normalizeMetadataTags(fileData.tags),
             description: fileData.description,
             isLocked: false,
         };
@@ -426,6 +495,33 @@ export function LibraryDetail({ library, allLibraries, onBack, onPreviewFile, pr
     const handleEditConfirm = (updatedItem: any) => {
         toast.success(`条目 "${updatedItem.name || updatedItem.functionName}" 已更新`);
         // 这里如果是真实应用会更新 allLibraries 状态或发送 API
+    };
+
+    const handleOpenFileMetadataModal = (file: KBFile) => {
+        setEditingFileMeta(file);
+        setShowFileMetadataModal(true);
+    };
+
+    const handleFileMetadataConfirm = (payload: { tags: string[]; description: string }) => {
+        if (!editingFileMeta) return;
+
+        const targetFileId = editingFileMeta.id;
+        const normalizedPayload = {
+            tags: normalizeMetadataTags(payload.tags),
+            description: payload.description.trim(),
+        };
+
+        if (isFileInTree(tempFolders, targetFileId)) {
+            setTempFolders(prev => applyMetadataToTree(prev, targetFileId, normalizedPayload));
+            setFolderStack(prev => applyMetadataToTree(prev, targetFileId, normalizedPayload));
+        } else {
+            setFileMetaOverrides(prev => ({
+                ...prev,
+                [targetFileId]: normalizedPayload,
+            }));
+        }
+
+        toast.success(`文件 "${renamedItems[targetFileId] || editingFileMeta.name}" 已更新标签与说明`);
     };
 
     const handleDeleteItem = (item: any) => {
@@ -604,6 +700,9 @@ export function LibraryDetail({ library, allLibraries, onBack, onPreviewFile, pr
                                 const isTemp = tempFolders.some(tf => tf.id === file.id);
                                 // Apply rename override if exists
                                 const displayName = renamedItems[file.id] || file.name;
+                                const fileMeta = getEffectiveFileMeta(file);
+                                const displayTags = fileMeta.tags;
+                                const displayDescription = fileMeta.description;
 
                                 return (
                                     <TableRow key={file.id} className={cn("hover:bg-slate-50", isTemp ? "bg-blue-50/10" : "")}>
@@ -634,18 +733,18 @@ export function LibraryDetail({ library, allLibraries, onBack, onPreviewFile, pr
                                                         {displayName}
                                                         {file.isLocked && <Badge variant="outline" className="text-[10px] h-4 px-1 text-amber-600 bg-amber-50 border-amber-200">涉密</Badge>}
                                                     </span>
-                                                    {isTemp ? (
-                                                        <span className="text-[10px] text-blue-500">刚刚创建</span>
-                                                    ) : (
-                                                        file.description && (
+                                                        {isTemp ? (
+                                                            <span className="text-[10px] text-blue-500">刚刚创建</span>
+                                                        ) : (
+                                                        displayDescription && (
                                                             <Tooltip>
                                                                 <TooltipTrigger asChild>
-                                                                    <span className="text-[10px] text-slate-400 truncate max-w-[200px] cursor-help">{file.description}</span>
+                                                                    <span className="text-[10px] text-slate-400 truncate max-w-[200px] cursor-help">{displayDescription}</span>
                                                                 </TooltipTrigger>
                                                                 <TooltipContent side="bottom" align="start" className="max-w-xs break-all bg-white text-slate-800 border-slate-200 shadow-xl p-3">
                                                                     <div className="space-y-1">
                                                                         <div className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">文件说明</div>
-                                                                        <div className="text-xs leading-relaxed">{file.description}</div>
+                                                                        <div className="text-xs leading-relaxed">{displayDescription}</div>
                                                                     </div>
                                                                 </TooltipContent>
                                                             </Tooltip>
@@ -659,9 +758,9 @@ export function LibraryDetail({ library, allLibraries, onBack, onPreviewFile, pr
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
                                                         <div className="flex flex-wrap gap-1 max-h-[40px] overflow-hidden relative pr-4 group/tags cursor-help">
-                                                            {file.tags && file.tags.length > 0 ? (
+                                                            {displayTags.length > 0 ? (
                                                                 <>
-                                                                    {file.tags.map((tag, idx) => (
+                                                                    {displayTags.map((tag, idx) => (
                                                                         <Badge
                                                                             key={idx}
                                                                             variant="secondary"
@@ -670,7 +769,7 @@ export function LibraryDetail({ library, allLibraries, onBack, onPreviewFile, pr
                                                                             {tag}
                                                                         </Badge>
                                                                     ))}
-                                                                    {file.tags.length > 4 && (
+                                                                    {displayTags.length > 4 && (
                                                                         <span className="text-[10px] text-slate-400 absolute bottom-0 right-0 bg-white/80 px-0.5 ml-1">...</span>
                                                                     )}
                                                                 </>
@@ -679,10 +778,10 @@ export function LibraryDetail({ library, allLibraries, onBack, onPreviewFile, pr
                                                             )}
                                                         </div>
                                                     </TooltipTrigger>
-                                                    {file.tags && file.tags.length > 0 && (
+                                                    {displayTags.length > 0 && (
                                                         <TooltipContent className="max-w-[200px] p-2 bg-white border-slate-200 shadow-lg">
                                                             <div className="flex flex-wrap gap-1">
-                                                                {file.tags.map((tag, idx) => (
+                                                                {displayTags.map((tag, idx) => (
                                                                     <Badge key={idx} variant="secondary" className="text-[10px] px-1.5 py-0 h-4 bg-blue-50 text-blue-600 border-blue-100">
                                                                         {tag}
                                                                     </Badge>
@@ -723,6 +822,22 @@ export function LibraryDetail({ library, allLibraries, onBack, onPreviewFile, pr
                                                                 </Button>
                                                             </TooltipTrigger>
                                                             <TooltipContent>预览</TooltipContent>
+                                                        </Tooltip>
+                                                    )}
+
+                                                    {file.type !== 'folder' && (
+                                                        <Tooltip>
+                                                            <TooltipTrigger asChild>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="h-8 w-8 hover:text-blue-600"
+                                                                    onClick={() => handleOpenFileMetadataModal(file)}
+                                                                >
+                                                                    <Tag className="h-4 w-4" />
+                                                                </Button>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent>编辑标签和说明</TooltipContent>
                                                         </Tooltip>
                                                     )}
 
@@ -1076,11 +1191,28 @@ export function LibraryDetail({ library, allLibraries, onBack, onPreviewFile, pr
                 onConfirm={handleParseConfirm}
             />
 
+            <FileMetadataModal
+                key={`${editingFileMeta?.id || 'file'}-${showFileMetadataModal ? 'open' : 'closed'}`}
+                open={showFileMetadataModal}
+                onOpenChange={(open) => {
+                    setShowFileMetadataModal(open);
+                    if (!open) {
+                        setEditingFileMeta(null);
+                    }
+                }}
+                file={editingFileMeta}
+                initialTags={editingFileMeta ? getEffectiveFileMeta(editingFileMeta).tags : []}
+                initialDescription={editingFileMeta ? getEffectiveFileMeta(editingFileMeta).description : ''}
+                suggestedTags={systemSuggestedTags}
+                onConfirm={handleFileMetadataConfirm}
+            />
+
             <UploadModal
                 open={showUploadModal}
                 onOpenChange={setShowUploadModal}
                 isFolder={isFolderUpload}
                 libraryType={getLibraryType()}
+                tagTaxonomy={tagTaxonomy}
                 onParseComplete={handleParseComplete}
                 onConfirm={handleUploadConfirm}
             />

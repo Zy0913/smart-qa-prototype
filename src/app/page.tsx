@@ -80,6 +80,8 @@ import {
 import { KnowledgeBaseView } from '@/components/knowledge-base/KnowledgeBaseView';
 import { KnowledgeBaseSelector } from '@/components/knowledge-base/KnowledgeBaseSelector';
 import { AIChatPanel } from '@/components/AIChatPanel';
+import { SystemSettingsView } from '@/components/settings/SystemSettingsView';
+import { defaultSystemTagTaxonomy, SystemTagTaxonomy } from '@/data/system-tags';
 
 
 // Markdown渲染函数 - 支持表格、标题、加粗等
@@ -327,6 +329,8 @@ export default function SmartQAPage() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [selectedHistory, setSelectedHistory] = useState<string | null>(null);
   const [selectedKnowledgeBases, setSelectedKnowledgeBases] = useState<string[]>([]);
+  const [currentUserRole] = useState<'admin' | 'member'>('admin');
+  const [systemTagTaxonomy, setSystemTagTaxonomy] = useState<SystemTagTaxonomy>(defaultSystemTagTaxonomy);
 
   // 当前视图
   const [currentView, setCurrentView] = useState<string>('knowledge-base');
@@ -658,7 +662,9 @@ export default function SmartQAPage() {
               <Avatar className="h-8 w-8 ring-2 ring-orange-100">
                 <AvatarFallback className="bg-orange-100 text-orange-600 text-xs font-bold font-sans">演</AvatarFallback>
               </Avatar>
-              <span className="text-xs font-semibold text-slate-700 font-sans">演示账号</span>
+              <span className="text-xs font-semibold text-slate-700 font-sans">
+                演示账号 {currentUserRole === 'admin' ? '· 管理员' : '· 普通成员'}
+              </span>
               <ChevronDown className="h-3 w-3 text-slate-400 group-hover:text-slate-600 transition-colors" />
             </div>
           </div>
@@ -672,6 +678,7 @@ export default function SmartQAPage() {
             <main className="flex-1 overflow-hidden relative flex flex-col">
               {currentView === 'knowledge-base' ? (
                 <KnowledgeBaseView
+                  tagTaxonomy={systemTagTaxonomy}
                   aiPanel={
                     <AIChatPanel
                       messages={messages}
@@ -738,6 +745,12 @@ export default function SmartQAPage() {
                   />
 
                 </div>
+              ) : currentView === 'settings' ? (
+                <SystemSettingsView
+                  isAdmin={currentUserRole === 'admin'}
+                  taxonomy={systemTagTaxonomy}
+                  onTaxonomyChange={setSystemTagTaxonomy}
+                />
               ) : (
                 <div className="h-full flex flex-col items-center justify-center p-12 text-center bg-slate-50/50">
                   <div className="w-20 h-20 rounded-3xl bg-white shadow-xl shadow-slate-200/50 flex items-center justify-center mb-8 border border-slate-100 animate-in zoom-in-50 duration-500">

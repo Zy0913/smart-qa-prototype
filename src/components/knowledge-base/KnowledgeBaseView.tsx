@@ -20,12 +20,14 @@ import { Badge } from '@/components/ui/badge';
 import { Sparkles, Brain, Upload, Plus, Users, Trash2, Share2, HelpCircle, Bell, ChevronDown, MessageSquare, LayoutGrid, List as ListIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { SystemTagTaxonomy } from '@/data/system-tags';
 
 interface KnowledgeBaseViewProps {
     aiPanel?: React.ReactNode;
+    tagTaxonomy?: SystemTagTaxonomy;
 }
 
-export function KnowledgeBaseView({ aiPanel }: KnowledgeBaseViewProps) {
+export function KnowledgeBaseView({ aiPanel, tagTaxonomy }: KnowledgeBaseViewProps) {
     const [selectedLibraryId, setSelectedLibraryId] = useState<string | null>(null);
     const [currentTab, setCurrentTab] = useState<KBTab>('department');
     const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
@@ -140,6 +142,7 @@ export function KnowledgeBaseView({ aiPanel }: KnowledgeBaseViewProps) {
                         onBack={() => setSelectedLibraryId(null)}
                         onPreviewFile={handlePreviewFile}
                         previewFile={previewFile}
+                        tagTaxonomy={tagTaxonomy}
                     />
                 ) : (
                     <div className="flex-1 flex overflow-hidden min-h-0 bg-[#f8fafc]">
@@ -280,6 +283,7 @@ export function KnowledgeBaseView({ aiPanel }: KnowledgeBaseViewProps) {
                 isAI={isAIUpload}
                 isFolder={isFolderUpload}
                 libraryType={uploadLibraryType}
+                tagTaxonomy={tagTaxonomy}
                 onParseComplete={uploadParseCallback}
                 onConfirm={(_uploadedFiles, _isFolder) => {
                     setShowUploadModal(false);
